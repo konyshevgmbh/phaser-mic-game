@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Phaser Mobile Game with Microphone</title>
+    <title>Phaser Mobile Game with Dynamic Resize</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.js"></script>
     <style>
         body {
@@ -18,9 +18,9 @@
 </head>
 <body>
     <script>
-        // Dynamically set the game size to fit the screen
-        const gameWidth = window.innerWidth;
-        const gameHeight = window.innerHeight;
+        // Initialize game dimensions
+        let gameWidth = window.innerWidth;
+        let gameHeight = window.innerHeight;
 
         const config = {
             type: Phaser.AUTO,
@@ -68,6 +68,9 @@
                     console.error("Microphone access denied: ", err);
                     alert("Microphone access is required to play this game.");
                 });
+
+            // Handle resize events
+            window.addEventListener("resize", resizeGame);
         }
 
         function update() {
@@ -78,9 +81,23 @@
                 // Calculate average volume
                 const volume = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
 
-                // Map volume to circle size (clamp between 50 and 300)
+                // Map volume to circle size (clamp between 50 and half the smallest dimension)
                 const size = Phaser.Math.Clamp(volume * 2, 50, Math.min(gameWidth, gameHeight) / 2);
                 circle.setRadius(size);
+            }
+        }
+
+        function resizeGame() {
+            // Update game dimensions
+            gameWidth = window.innerWidth;
+            gameHeight = window.innerHeight;
+
+            // Resize the game canvas
+            game.scale.resize(gameWidth, gameHeight);
+
+            // Update circle position to remain in the center
+            if (circle) {
+                circle.setPosition(gameWidth / 2, gameHeight / 2);
             }
         }
     </script>
