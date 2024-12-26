@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Phaser Mobile Game with Microphone</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        // Dynamically set the game size to fit the screen
+        const gameWidth = window.innerWidth;
+        const gameHeight = window.innerHeight;
+
+        const config = {
+            type: Phaser.AUTO,
+            width: gameWidth,
+            height: gameHeight,
+            backgroundColor: "#222222",
+            scene: {
+                preload: preload,
+                create: create,
+                update: update,
+            },
+        };
+
+        let circle;
+        let analyser;
+        let dataArray;
+
+        const game = new Phaser.Game(config);
+
+        function preload() {
+            // Preload assets if needed
+        }
+
+        function create() {
+            // Add a circle to the center of the screen
+            circle = this.add.circle(gameWidth / 2, gameHeight / 2, 50, 0x00ff00);
+
+            // Request microphone access
+            navigator.mediaDevices
+                .getUserMedia({ audio: true, video: false })
+                .then((stream) => {
+                    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    const source = audioContext.createMediaStreamSource(stream);
+                    analyser = audioContext.createAnalyser();
+
+                    // Configure analyser
+                    analyser.fftSize = 256;
+                    const bufferLength = analyser.frequencyBinCount;
+                    dataArray = new Uint8Array(bufferLength);
+
+                    // Connect source to analyser
+                    source.connect(analyser);
+                })
+                .catch((err) => {
+                    console.error("Microphone access denied: ", err);
+                    alert("Microphone access is required to play this game.");
+                });
+        }
+
+        function update() {
+            if (analyser) {
+                // Get the frequency data
+                analyser.getByteFrequencyData(dataArray);
+
+                // Calculate average volume
+                const volume = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length;
+
+                // Map volume to circle size (clamp between 50 and 300)
+                const size = Phaser.Math.Clamp(volume * 2, 50, Math.min(gameWidth, gameHeight) / 2);
+                circle.setRadius(size);
+            }
+        }
+    </script>
+</body>
+</html>
